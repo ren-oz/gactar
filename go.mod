@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha7
 	github.com/urfave/cli/v2 v2.3.0
+	github.com/vearutop/statigz v1.1.5
 )
 
 require (

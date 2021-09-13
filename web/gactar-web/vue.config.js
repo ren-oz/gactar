@@ -1,3 +1,5 @@
+const CompressionPlugin = require('compression-webpack-plugin')
+
 module.exports = {
   devServer: {
     // This lets us run gactar to serve the endpoints, but run the UI through npm for testing
@@ -6,4 +8,11 @@ module.exports = {
 
   // don't include maps in the production output
   productionSourceMap: false,
+
+  chainWebpack(config) {
+    config.plugins.delete('prefetch')
+
+    config.plugin('CompressionPlugin').use(CompressionPlugin, [])
+    // .use(CompressionPlugin, [{ deleteOriginalAssets: true }])
+  },
 }

@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 	"sync"
 
 	"github.com/urfave/cli/v2"
+	"github.com/vearutop/statigz"
 
 	"github.com/asmaloney/gactar/actr"
 	"github.com/asmaloney/gactar/amod"
@@ -21,13 +21,6 @@ import (
 
 //go:embed build/*
 var mainAssets embed.FS
-
-// fsFunc is used to access embedded files in assetHandler()
-type fsFunc func(name string) (fs.File, error)
-
-func (f fsFunc) Open(name string) (fs.File, error) {
-	return f(name)
-}
 
 type Web struct {
 	context        *cli.Context
@@ -170,22 +163,19 @@ func (w *Web) runModel(rw http.ResponseWriter, req *http.Request) {
 }
 
 // assetHandler returns an http.Handler that will serve files from
-// the given embed.FS.  When locating a file, it will prepend the root
-// to the filesystem lookup.
-// Adapted from https://blog.lawrencejones.dev/golang-embed/
+// the given embed.FS using statigz to serve any gzipped files.
 func assetHandler(assets *embed.FS, root string) http.Handler {
-	handler := fsFunc(func(name string) (fs.File, error) {
-		assetPath := path.Join(root, name)
+	if root == "" {
+		return statigz.FileServer(assets)
+	}
 
-		f, err := assets.Open(assetPath)
-		if os.IsNotExist(err) {
-			return assets.Open("build/index.html")
-		}
+	sub, err := fs.Sub(assets, root)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
 
-		return f, err
-	})
-
-	return http.FileServer(http.FS(handler))
+	return statigz.FileServer(sub.(fs.ReadDirFS))
 }
 
 // listExamples simply returns a list of the examples included in the build.
